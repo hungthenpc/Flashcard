@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flashcards</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%23db8310' d='M12.41 148.02l232.94 105.67c6.8 3.09 14.49 3.09 21.29 0l232.94-105.67c16.55-7.51 16.55-32.52 0-40.03L266.65 2.31a25.607 25.607 0 0 0-21.29 0L12.41 107.98c-16.55 7.51-16.55 32.53 0 40.04zm487.18 88.28l-58.09-26.33-161.64 73.27c-7.56 3.43-15.59 5.17-23.86 5.17s-16.29-1.74-23.86-5.17L70.51 209.97l-58.1 26.33c-16.55 7.5-16.55 32.5 0 40l232.94 105.59c6.8 3.08 14.49 3.08 21.29 0L499.59 276.3c16.55-7.5 16.55-32.5 0-40zm0 127.8l-57.87-26.23-161.86 73.37c-7.56 3.43-15.59 5.17-23.86 5.17s-16.29-1.74-23.86-5.17L70.29 337.65l-57.88 26.23c-16.55 7.5-16.55 32.5 0 40l232.94 105.59c6.8 3.08 14.49 3.08 21.29 0L499.59 404.1c16.55-7.5 16.55-32.5 0-40z'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Playfair+Display:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', 'Plus Jakarta Sans', system-ui, sans-serif;
+      min-height: 100vh;
+      position: relative;
+      background: #000000;
+      color: #ffd9b3;
+      display: flex;
+      justify-content: center;
+      padding: 1.5rem 1rem;
+    }
+
+    .fas, .far, .fab, .fa-solid {
+      color: #db8310 !important;
+      transition: color 0.3s ease !important;
+    }
+
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background: radial-gradient(circle at 70% 20%, rgba(255,100,0,0.15), transparent 40%),
+                  radial-gradient(circle at 20% 80%, rgba(255,120,0,0.12), transparent 50%),
+                  linear-gradient(135deg, #000000 0%, #0a0500 60%, #140800 100%);
+      z-index: -2;
+    }
+
+    body::after {
+      content: ''; position: fixed; inset: 0;
+      background-image: 
+          radial-gradient(1.5px 1.5px at 15% 20%, rgba(255, 180, 100, 0.6), rgba(0,0,0,0)),
+          radial-gradient(1px 1px at 75% 45%, rgba(255, 140, 50, 0.5), rgba(0,0,0,0)),
+          radial-gradient(2px 2px at 92% 80%, rgba(255, 100, 0, 0.7), rgba(0,0,0,0)),
+          radial-gradient(1px 1px at 30% 70%, rgba(255, 120, 30, 0.5), rgba(0,0,0,0));
+      background-repeat: no-repeat; background-size: 200px 200px; opacity: 0.5;
+      pointer-events: none; z-index: -1;
+    }
+
+    .app-container {
+      width: 100%; max-width: 720px;
+      display: flex; flex-direction: column; gap: 1.2rem; z-index: 2;
+    }
+
+    .logo-title {
+      display: flex; align-items: center; justify-content: center;
+      gap: 14px; font-size: 2.2rem; color: #ffb066;
+      text-shadow: 0 0 20px rgba(255,120,0,0.3); letter-spacing: 2px;
+      text-transform: uppercase; font-weight: 700; text-align: center;
+    }
+
+    .card-panel {
+      background: rgba(10, 10, 10, 0.85); backdrop-filter: blur(12px);
+      border-radius: 20px; padding: 20px; border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5); transition: 0.3s;
+    }
+
+    .card-header {
+      font-size: 1.1rem; font-weight: 600; margin-bottom: 16px;
+      padding-bottom: 8px; border-bottom: 1px solid rgba(255, 102, 0, 0.15);
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #ffd9b3;
+    }
+
+    /* ===== STATS BAR (Words + Streak) ===== */
+    .stats-bar { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .stat-card {
+      background: rgba(0, 0, 0, 0.55); border: 1px solid rgba(255, 102, 0, 0.2);
+      border-radius: 14px; padding: 1rem; text-align: center;
+      transition: all 0.4s ease;
+      position: relative;
+    }
+    .stat-label { font-size: 1.3rem; color: #ffaa66; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .stat-value { font-size: 1.5rem; font-weight: 700; color: #ffd9b3; margin-top: 4px; }
+
+    /* Streak fire icon — inactive (dim) */
+    .streak-card .fire-icon {
+      font-size: 1.3rem;
+      transition: all 0.5s ease;
+      display: inline-block;
+      filter: grayscale(0.8) brightness(0.4);
+      opacity: 0.5;
+    }
+
+    /* Streak fire icon — active (bright + glow + pulse) */
+    .streak-card.active {
+      border-color: rgba(255, 140, 40, 0.6);
+      box-shadow: 0 0 25px rgba(255, 120, 40, 0.25), inset 0 0 20px rgba(255, 120, 40, 0.05);
+    }
+    .streak-card.active .fire-icon {
+      filter: none;
+      opacity: 1;
+      animation: firePulse 1.8s ease-in-out infinite;
+    }
+    .streak-card.active .stat-value {
+      color: #ffb84d;
+      text-shadow: 0 0 15px rgba(255, 180, 70, 0.7);
+    }
+
+    @keyframes firePulse {
+      0%, 100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 6px rgba(255, 140, 40, 0.8));
+      }
+      50% {
+        transform: scale(1.12);
+        filter: drop-shadow(0 0 14px rgba(255, 180, 70, 1));
+      }
+    }
+
+    /* ===== LEVEL GRAPH ===== */
+    .level-graph { display: flex; justify-content: space-between; align-items: flex-end; height: 210px; padding-top: 15px; }
+    .level-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+    .bar-wrapper { width: 100%; max-width: 36px; height: 170px; display: flex; align-items: flex-end; background: rgba(255, 255, 255, 0.03); border-radius: 6px; }
+    .bar-fill { width: 100%; border-radius: 6px; transition: height 0.5s ease; min-height: 4px; }
+    .lvl-1 { background: #ef4444; }
+    .lvl-2 { background: #f97316; }
+    .lvl-3 { background: #eab308; }
+    .lvl-4 { background: #10b981; }
+    .lvl-5 { background: #3b82f6; }
+    .level-num { font-size: 0.75rem; color: #ffaa66; }
+    .level-count { font-size: 0.8rem; font-weight: bold; color: #ffd9b3; }
+
+    /* ===== REVIEW MODE ===== */
+    body.review-mode .stats-bar,
+    body.review-mode .mastery-panel,
+    body.review-mode .add-panel,
+    body.review-mode .list-panel,
+    body.review-mode .logo-title,
+    body.review-mode .practice-panel {
+      display: none !important;
+    }
+
+    .review-progress-header {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      padding: 14px 18px;
+      background: rgba(10, 10, 10, 0.85);
+      border: 1px solid rgba(255, 120, 40, 0.3);
+      border-radius: 16px;
+      backdrop-filter: blur(12px);
+      animation: slideDown 0.4s ease;
+    }
+    body.review-mode .review-progress-header { display: flex; }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .progress-info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+      color: #ffaa66;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .progress-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,102,0,0.25);
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+    .progress-chip.remembered {
+      color: #10b981;
+      border-color: rgba(16, 185, 129, 0.4);
+      background: rgba(16, 185, 129, 0.08);
+    }
+    .progress-chip.remaining { color: #ffaa66; }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ff7a1a, #ffaa44);
+      border-radius: 10px;
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 12px rgba(255, 140, 40, 0.5);
+    }
+
+    /* ===== FLASHCARD ===== */
+    .study-section { display: flex; flex-direction: column; align-items: center; gap: 1rem; width: 100%; }
+
+    .flashcard-wrapper {
+      perspective: 1000px;
+      width: 100%;
+      height: 280px;
+      cursor: pointer;
+      display: none;
+    }
+    .flashcard-wrapper.show {
+      display: block;
+      animation: cardEnter 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes cardEnter {
+      from { opacity: 0; transform: scale(0.92) translateY(20px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .flashcard { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+    .flashcard.flipped { transform: rotateY(180deg); }
+    .card-face {
+      position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      padding: 1.5rem; border-radius: 20px; background: rgba(10, 10, 10, 0.9);
+      backdrop-filter: blur(12px); border: 1px solid rgba(255, 120, 40, 0.3);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8); text-align: center;
+      transition: box-shadow 0.3s ease, border-color 0.3s ease;
+    }
+    .flashcard-wrapper:hover .card-face {
+      box-shadow: 0 15px 40px rgba(255, 120, 40, 0.15);
+      border-color: rgba(255, 140, 50, 0.5);
+    }
+    .card-tag { position: absolute; top: 15px; left: 18px; font-size: 0.75rem; background: rgba(255, 102, 0, 0.2); color: #ffaa66; border: 1px solid rgba(255, 102, 0, 0.4); padding: 4px 12px; border-radius: 30px; }
+    .card-text { font-family: 'Playfair Display', serif; font-size: 2rem; color: #ffd9b3; word-break: break-word; }
+    .card-example { margin-top: 12px; font-size: 0.9rem; font-style: italic; color: #ffaa66; opacity: 0.9; font-family: 'Segoe UI', sans-serif; }
+    .card-back { transform: rotateY(180deg); }
+
+    .evaluation-bar {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      width: 100%;
+    }
+    .evaluation-bar.show {
+      display: grid;
+      animation: fadeInUp 0.4s ease;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .btn-eval {
+      padding: 12px; border-radius: 12px; border: 1px solid rgba(255,102,0,0.3);
+      background: rgba(0,0,0,0.6); color: #ffd9b3; cursor: pointer; font-weight: 600;
+      display: flex; align-items: center; justify-content: center; gap: 8px; 
+      transition: all 0.2s ease;
+    }
+    .btn-eval.wrong:hover { border-color: #ef4444; color: #ef4444; background: rgba(239, 68, 68, 0.15); transform: translateY(-2px); }
+    .btn-eval.right:hover { border-color: #10b981; color: #10b981; background: rgba(16, 185, 129, 0.15); transform: translateY(-2px); }
+    .btn-eval:active { transform: scale(0.97); }
+
+    /* ===== RESULT SCREEN ===== */
+    .result-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.2rem;
+      width: 100%;
+      padding: 28px 20px;
+      background: rgba(10, 10, 10, 0.9);
+      border: 1px solid rgba(255, 120, 40, 0.3);
+      border-radius: 22px;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+      text-align: center;
+    }
+    .result-screen.show {
+      display: flex;
+      animation: resultPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes resultPop {
+      0% { opacity: 0; transform: scale(0.85); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    .result-image {
+      width: 180px;
+      height: 180px;
+      border-radius: 18px;
+      object-fit: cover;
+      border: 2px solid rgba(255, 120, 40, 0.4);
+      box-shadow: 0 8px 25px rgba(255, 120, 40, 0.25);
+      background: rgba(0,0,0,0.4);
+      animation: floatImage 3s ease-in-out infinite;
+    }
+    @keyframes floatImage {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    .result-score {
+      font-size: 2.6rem;
+      font-weight: 700;
+      color: #ffaa44;
+      text-shadow: 0 0 25px rgba(255, 170, 68, 0.6);
+      font-family: 'Playfair Display', serif;
+      animation: scoreGlow 2s ease-in-out infinite;
+    }
+    @keyframes scoreGlow {
+      0%, 100% { text-shadow: 0 0 25px rgba(255, 170, 68, 0.6); }
+      50% { text-shadow: 0 0 40px rgba(255, 170, 68, 0.9); }
+    }
+
+    .result-subtitle {
+      font-size: 1rem;
+      color: #ffaa66;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .result-message {
+      font-size: 1.15rem;
+      color: #ffd9b3;
+      font-style: italic;
+      font-family: 'Playfair Display', serif;
+      max-width: 420px;
+      line-height: 1.6;
+      padding: 0 10px;
+    }
+
+    .result-stats-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 4px;
+    }
+    .result-stat-pill {
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border: 1px solid rgba(255,102,0,0.3);
+      background: rgba(0,0,0,0.5);
+    }
+    .result-stat-pill.correct { color: #10b981; border-color: rgba(16,185,129,0.4); }
+    .result-stat-pill.wrong { color: #ef4444; border-color: rgba(239,68,68,0.4); }
+
+    .result-actions {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+      max-width: 400px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+    .result-actions .btn { flex: 1; min-width: 140px; }
+
+    /* ===== PRACTICE PANEL ===== */
+    .practice-panel .card-header { justify-content: flex-start; gap: 8px; }
+
+    .practice-options {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .practice-count-btn {
+      flex: 1;
+      min-width: 70px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,102,0,0.3);
+      color: #ffaa66;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: 0.2s;
+      text-align: center;
+    }
+    .practice-count-btn:hover {
+      border-color: #ff7a1a;
+      color: #ffd9b3;
+      background: rgba(255,102,0,0.1);
+    }
+    .practice-count-btn.selected {
+      border-color: #ff7a1a;
+      color: #ffd9b3;
+      background: rgba(255,102,0,0.15);
+      box-shadow: 0 0 15px rgba(255,120,40,0.25);
+    }
+
+    .practice-info {
+      font-size: 0.85rem;
+      color: #ffaa66;
+      opacity: 0.85;
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+
+    /* ===== FORMS ===== */
+    .input-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+    input, textarea {
+      background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255, 102, 0, 0.3);
+      color: #ffd9b3; padding: 12px 14px; border-radius: 10px; outline: none;
+      font-family: inherit; font-size: 0.9rem; transition: border-color 0.2s;
+    }
+    input:focus, textarea:focus { border-color: #ff7a1a; }
+    input::placeholder, textarea::placeholder { color: #ffb066; opacity: 0.5; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 14px; border-radius: 40px; background: #0a0a0a;
+      color: #ffaa66; border: 1px solid rgba(255, 102, 0, 0.4); font-weight: bold;
+      transition: 0.3s; cursor: pointer; font-size: 0.95rem; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    .btn:hover {
+      background: rgba(255, 102, 0, 0.15); border-color: #ff7a1a; color: #ffd9b3;
+      transform: translateY(-2px); box-shadow: 0 4px 15px rgba(255, 120, 40, 0.25);
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .review-start-box {
+      width: 100%; padding: 15px; text-align: center;
+      background: rgba(10, 10, 10, 0.85); border-radius: 20px;
+      border: 1px solid rgba(255, 120, 40, 0.3); display: flex;
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 12px;
+    }
+
+    .review-start-box .btn { max-width: 100%; }
+
+    .search-suggestions {
+      background: rgba(15, 10, 5, 0.95); border: 1px solid rgba(255, 102, 0, 0.3);
+      border-radius: 10px; max-height: 120px; overflow-y: auto; display: none; margin-top: -6px; margin-bottom: 8px;
+    }
+    .suggestion-item { padding: 8px 12px; font-size: 0.85rem; border-bottom: 1px solid rgba(255,102,0,0.1); color: #ffaa66; }
+    .suggestion-item span { color: #ffd9b3; }
+
+    .vocab-list { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+    .vocab-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 14px; background: rgba(0, 0, 0, 0.55); border: 1px solid rgba(255, 102, 0, 0.25);
+      border-radius: 12px;
+    }
+    .vocab-info strong { color: #ffaa66; }
+    .vocab-info span { color: #ffb066; font-size: 0.85rem; margin-left: 6px; opacity: 0.9; }
+    .btn-delete { background: none; border: none; color: #ff6666; cursor: pointer; font-size: 0.9rem; padding: 4px; transition: transform 0.2s; }
+    .btn-delete:hover { color: #ef4444; transform: scale(1.15); }
+
+    .add-tabs { display: flex; gap: 10px; margin-bottom: 12px; }
+    .add-tab-btn {
+      background: none; border: none; color: #ffaa66; opacity: 0.6;
+      font-weight: 600; cursor: pointer; padding-bottom: 4px; border-bottom: 2px solid transparent;
+    }
+    .add-tab-btn.active { opacity: 1; border-color: #ff7a1a; color: #ffd9b3; }
+
+    .exit-review-btn {
+      display: none;
+      margin-top: 8px;
+      padding: 10px 20px;
+      border-radius: 30px;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,102,0,0.3);
+      color: #ffaa66;
+      cursor: pointer;
+      font-weight: 600;
+      transition: 0.2s;
+    }
+    .exit-review-btn:hover {
+      border-color: #ff7a1a; color: #ffd9b3;
+      background: rgba(255,102,0,0.15);
+    }
+    body.review-mode .exit-review-btn { display: inline-flex; }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #000000; }
+    ::-webkit-scrollbar-thumb { background: #222222; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05); }
+    ::-webkit-scrollbar-thumb:hover { background: #444444; }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <header>
+      <div class="logo-title">
+        <i class="fas fa-layer-group"></i>
+        <span>FLASHCARDS</span>
+      </div>
+    </header>
+
+    <!-- Stats Bar: Words + Streak (fire icon toggles based on today's review) -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-label">Words: <span class="stat-val" id="totalCount">0</span></div>
+      </div>
+      <div class="stat-card streak-card" id="streakCard">
+        <div class="stat-label">
+          <i class="fas fa-fire fire-icon" id="fireIcon"></i>
+          <span id="streakCount">0</span>
+        </div>
+      </div>
+    </div>
+
+    <section class="card-panel mastery-panel">
+      <div class="card-header">
+        <span><i class="fas fa-chart-bar"></i> Mastery Levels (Level 1 - 5)</span>
+        <span style="font-size: 0.8rem; color: #ffaa66;" id="dueTodayText">Due: 0 cards</span>
+      </div>
+      <div class="level-graph">
+        <div class="level-col">
+          <span class="level-count" id="countLvl1">0</span>
+          <div class="bar-wrapper"><div class="bar-fill lvl-1" id="barLvl1" style="height: 0%;"></div></div>
+          <span class="level-num">Lvl 1</span>
+        </div>
+        <div class="level-col">
+          <span class="level-count" id="countLvl2">0</span>
+          <div class="bar-wrapper"><div class="bar-fill lvl-2" id="barLvl2" style="height: 0%;"></div></div>
+          <span class="level-num">Lvl 2</span>
+        </div>
+        <div class="level-col">
+          <span class="level-count" id="countLvl3">0</span>
+          <div class="bar-wrapper"><div class="bar-fill lvl-3" id="barLvl3" style="height: 0%;"></div></div>
+          <span class="level-num">Lvl 3</span>
+        </div>
+        <div class="level-col">
+          <span class="level-count" id="countLvl4">0</span>
+          <div class="bar-wrapper"><div class="bar-fill lvl-4" id="barLvl4" style="height: 0%;"></div></div>
+          <span class="level-num">Lvl 4</span>
+        </div>
+        <div class="level-col">
+          <span class="level-count" id="countLvl5">0</span>
+          <div class="bar-wrapper"><div class="bar-fill lvl-5" id="barLvl5" style="height: 0%;"></div></div>
+          <span class="level-num">Lvl 5</span>
+        </div>
+      </div>
+    </section>
+
+    <main class="study-section">
+      <div class="review-start-box" id="reviewStartBox">
+        <button class="btn" id="startReviewBtn" onclick="startReviewSession()">
+          <i class="fas fa-play"></i> Start Daily Review (<span id="reviewCountBtn">0</span> cards)
+        </button>
+        <div style="font-size: 0.78rem; color: #ffaa66; opacity: 0.7;">
+          Due cards based on your last review time
+        </div>
+      </div>
+
+      <div class="review-progress-header" id="reviewProgressHeader">
+        <div class="progress-info-row">
+          <span class="progress-chip remembered">
+            <i class="fas fa-check-circle"></i> Remembered: <strong id="rememberedCount">0</strong>
+          </span>
+          <span class="progress-chip remaining">
+            <i class="fas fa-hourglass-half"></i> Remaining: <strong id="remainingCount">0</strong>
+          </span>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" id="progressBarFill" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <div class="flashcard-wrapper" id="cardWrapper">
+        <div class="flashcard" id="cardElement">
+          <div class="card-face card-front">
+            <span class="card-tag" id="levelTag">Loading...</span>
+            <div class="card-text" id="frontDisplay">...</div>
+          </div>
+          <div class="card-face card-back">
+            <div class="card-text" id="backDisplay">...</div>
+            <div class="card-example" id="exampleDisplay"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="evaluation-bar" id="evalBar">
+        <button type="button" class="btn-eval wrong" onclick="submitAnswer(false)">
+          <i class="fas fa-times"></i> Forgot
+        </button>
+        <button type="button" class="btn-eval right" onclick="submitAnswer(true)">
+          <i class="fas fa-check"></i> Remembered
+        </button>
+      </div>
+
+      <div class="result-screen" id="resultScreen">
+        <img 
+          class="result-image" 
+          id="resultImage" 
+          src="" 
+          alt="Result"
+          onerror="this.style.display='none'"
+        >
+        <div class="result-score" id="resultScore">0/0</div>
+        <div class="result-subtitle" id="resultSubtitle">Session Complete</div>
+        <div class="result-message" id="resultMessage"></div>
+        <div class="result-stats-row">
+          <span class="result-stat-pill correct"><i class="fas fa-check"></i> <span id="resultCorrect">0</span> Remembered</span>
+          <span class="result-stat-pill wrong"><i class="fas fa-times"></i> <span id="resultWrong">0</span> Forgot</span>
+        </div>
+        <div class="result-actions">
+          <button class="btn" onclick="restartReview()">
+            <i class="fas fa-redo"></i> Review Again
+          </button>
+          <button class="btn" onclick="exitReview()">
+            <i class="fas fa-home"></i> Back to Home
+          </button>
+        </div>
+      </div>
+
+      <button class="exit-review-btn" id="exitReviewBtn" onclick="exitReview()">
+        <i class="fas fa-arrow-left"></i> Exit Review
+      </button>
+    </main>
+
+    <section class="card-panel practice-panel">
+      <div class="card-header">
+        <i class="fas fa-dumbbell"></i>
+        <span>PRACTICE MODE</span>
+      </div>
+      <div class="practice-options" id="practiceOptions">
+        <button class="practice-count-btn" data-count="10" onclick="selectPracticeCount(10)">10</button>
+        <button class="practice-count-btn selected" data-count="20" onclick="selectPracticeCount(20)">20</button>
+        <button class="practice-count-btn" data-count="50" onclick="selectPracticeCount(50)">50</button>
+        <button class="practice-count-btn" data-count="100" onclick="selectPracticeCount(100)">100</button>
+      </div>
+      <button class="btn" id="startPracticeBtn" onclick="startPracticeSession()">
+        <i class="fas fa-play"></i> Start Practice (<span id="practiceCountLabel">20</span> cards)
+      </button>
+    </section>
+
+    <section class="card-panel add-panel">
+      <div class="card-header">
+        <span><i class="fas fa-plus-circle"></i> ADD NEW WORD</span>
+      </div>
+
+      <div class="add-tabs">
+        <button class="add-tab-btn active" id="tabSingleBtn" onclick="switchAddTab('single')">Single Add</button>
+        <button class="add-tab-btn" id="tabQuickBtn" onclick="switchAddTab('quick')">Quick Add (3 lines)</button>
+      </div>
+
+      <form id="addSingleForm">
+        <div class="input-group">
+          <input type="text" id="frontInput" placeholder="Word (Front)" required autocomplete="off" oninput="handleSearchSuggest(this.value)">
+          <div class="search-suggestions" id="searchSuggestions"></div>
+          
+          <input type="text" id="backInput" placeholder="Meaning (Back)" required autocomplete="off">
+          <input type="text" id="exampleInput" placeholder="Example Sentence (Optional)" autocomplete="off">
+        </div>
+        <button type="submit" class="btn" id="submitBtn">
+          <i class="fas fa-save"></i> Save Word
+        </button>
+      </form>
+
+      <form id="addQuickForm" style="display: none;">
+        <div class="input-group">
+          <textarea id="quickInput" rows="5" placeholder="Paste data here (Every 3 lines: Word, Meaning, Example)&#10;&#10;Example:&#10;Apple&#10;Quả táo&#10;I eat an apple."></textarea>
+        </div>
+        <button type="submit" class="btn" id="quickSubmitBtn">
+          <i class="fas fa-file-import"></i> Process & Import
+        </button>
+      </form>
+    </section>
+
+    <section class="card-panel list-panel">
+      <div class="card-header">
+        <span><i class="fas fa-list"></i> VOCABULARY LIST</span>
+      </div>
+      <div class="vocab-list" id="vocabList">
+        <div style="color: #ffaa66; text-align: center; padding: 15px;">Loading cards...</div>
+      </div>
+    </section>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, Timestamp, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDaxGqH8QMC6VnAcPPl4uWR5XFHm1c96Ks",
+      authDomain: "flashcard-ca2d6.firebaseapp.com",
+      projectId: "flashcard-ca2d6",
+      storageBucket: "flashcard-ca2d6.firebasestorage.app",
+      messagingSenderId: "939065687760",
+      appId: "1:939065687760:web:e1cf414262ca91c722a8d5"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const RESULT_CONFIG = {
+      images: {
+        excellent: "202d2a49d6cbfe51397623fcd1a21781.jpg",
+        good:      "9068d39a1cc4173c33a69bd11a127fab.jpg",
+        average:   "fc420f9a45efd3871dd3016e34160daf.jpg",
+        poor:      "9369b4ff5b31d80ebb8b4737cb926789.jpg",
+        bad:       "3371d640b31844d55a6865f28885213c.jpg"
+      },
+      messages: {
+        excellent: "Locked in. Every word stuck. This is Topik 6 energy — keep it up.",
+        good:      "Cooking. Most of it's in your head, just tighten the stragglers.",
+        average:   "Half in, half out. Grind the weak ones and come back meaner.",
+        poor:      "Rough. Forgot more than you remembered. Reset and try again.",
+        bad:       "Barely remembered shit. Take a breath and actually study this time."
+      },
+      subtitles: {
+        excellent: "Topik 6 lets gooo!",
+        good:      "Not bad i guess",
+        average:   "Wtf bro",
+        poor:      "Bro, just fucking give up",
+        bad:       "Kill yourself!"
+      }
+    };
+
+    const LEVEL_INTERVALS_HOURS = { 1: 4, 2: 12, 3: 24, 4: 72, 5: 168 };
+
+    const MAX_DAILY_DUE = {
+      0: 60,
+      1: 150,
+      2: 220,
+      3: 280,
+      7: 350,
+      999: 400
+    };
+
+    // ===== KST helpers =====
+    function getKSTDateString(date = new Date()) {
+      const kstTime = new Date(date.getTime() + (9 * 60 * 60 * 1000));
+      return kstTime.toISOString().split('T')[0];
+    }
+
+    function getDaysDifference(dateStr1, dateStr2) {
+      const d1 = new Date(dateStr1 + 'T00:00:00Z');
+      const d2 = new Date(dateStr2 + 'T00:00:00Z');
+      return Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+    }
+
+    let allCards = [];
+    let dueQueue = [];
+    let currentCard = null;
+    let isSessionActive = false;
+    let sessionMode = "daily";
+    let reviewedCardIds = new Set();
+    let selectedPracticeCount = 20;
+
+    let sessionStats = {
+      totalCards: 0,
+      firstTimeCorrect: 0,
+      firstTimeWrong: 0,
+      totalAnswers: 0
+    };
+
+    function calculateLevel(totalReviews, correctCount) {
+      if (!totalReviews || totalReviews === 0) return 1;
+      const accuracy = correctCount / totalReviews;
+      if (totalReviews >= 15 && accuracy >= 0.90) return 5;
+      if (totalReviews >= 10 && accuracy >= 0.85) return 4;
+      if (totalReviews >= 6  && accuracy >= 0.70) return 3;
+      if (totalReviews >= 3  && accuracy >= 0.50) return 2;
+      return 1;
+    }
+
+    function isCardDue(card, now = new Date()) {
+      const nextDue = new Date(card.nextDueAt);
+      return nextDue <= now;
+    }
+
+    function computeNextDueAt(level, from = new Date()) {
+      const hours = LEVEL_INTERVALS_HOURS[level] || 24;
+      return new Date(from.getTime() + hours * 60 * 60 * 1000);
+    }
+
+    function getAbsenceDays(lastStreakDate) {
+      if (!lastStreakDate) return 999;
+      const todayKST = getKSTDateString();
+      const diff = getDaysDifference(lastStreakDate, todayKST);
+      return Math.max(0, diff);
+    }
+
+    function getMaxDueCapForAbsence(days) {
+      if (days >= 7) return MAX_DAILY_DUE[999];
+      if (days >= 3) return MAX_DAILY_DUE[3];
+      if (days === 2) return MAX_DAILY_DUE[2];
+      if (days === 1) return MAX_DAILY_DUE[1];
+      return MAX_DAILY_DUE[0];
+    }
+
+    function pickCardsForSession(cards, limit) {
+      const now = new Date();
+      const dueCards = cards.filter(c => isCardDue(c, now));
+      dueCards.sort((a, b) => {
+        if (a.level !== b.level) return a.level - b.level;
+        return new Date(a.nextDueAt) - new Date(b.nextDueAt);
+      });
+      return dueCards.slice(0, limit);
+    }
+
+    function pickCardsForPractice(cards, limit) {
+      const sorted = [...cards].sort((a, b) => {
+        if (a.level !== b.level) return a.level - b.level;
+        return new Date(a.lastReviewed) - new Date(b.lastReviewed);
+      });
+      return sorted.slice(0, limit);
+    }
+
+    // ===== Streak =====
+    async function loadStreakData() {
+      const streakRef = doc(db, "streaks", "vocab");
+      try {
+        const docSnap = await getDoc(streakRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          return {
+            streak: data.streak || 0,
+            lastDate: data.lastDate || "",
+            reviewedToday: data.reviewedToday || false
+          };
+        }
+      } catch (err) {
+        console.error("Streak load error:", err);
+      }
+      return { streak: 0, lastDate: "", reviewedToday: false };
+    }
+
+    async function saveStreakData(streak, lastDate, reviewedToday) {
+      const streakRef = doc(db, "streaks", "vocab");
+      try {
+        await setDoc(streakRef, { streak, lastDate, reviewedToday });
+      } catch (err) {
+        console.error("Streak save error:", err);
+      }
+    }
+
+    async function markStreakReviewedToday() {
+      const todayKST = getKSTDateString();
+      const data = await loadStreakData();
+
+      if (data.lastDate === todayKST && data.reviewedToday) return;
+
+      let newStreak = data.streak;
+      const lastDate = data.lastDate;
+
+      if (!lastDate) {
+        newStreak = 1;
+      } else if (lastDate === todayKST) {
+        // same day
+      } else {
+        const diff = getDaysDifference(lastDate, todayKST);
+        if (diff === 1) newStreak = data.streak + 1;
+        else newStreak = 1;
+      }
+
+      await saveStreakData(newStreak, todayKST, true);
+      await refreshStreakDisplay();
+    }
+
+    async function refreshStreakDisplay() {
+      const data = await loadStreakData();
+      document.getElementById("streakCount").innerText = data.streak;
+
+      const todayKST = getKSTDateString();
+      const streakCard = document.getElementById("streakCard");
+      const isActiveToday = (data.lastDate === todayKST && data.reviewedToday);
+
+      // Toggle fire brightness + card glow
+      streakCard.classList.toggle("active", isActiveToday);
+    }
+
+    // ===== Load cards =====
+    async function fetchCards() {
+      const listEl = document.getElementById("vocabList");
+      try {
+        const querySnapshot = await getDocs(collection(db, "flashcards"));
+        allCards = [];
+        
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          let lastReviewed = data.lastReviewed ? data.lastReviewed.toDate() : new Date(0);
+          let nextDueAt = data.nextDueAt ? data.nextDueAt.toDate() : new Date(0);
+          const level = calculateLevel(data.totalReviews || 0, data.correctCount || 0);
+
+          allCards.push({
+            id: docSnap.id,
+            front: data.front || "",
+            back: data.back || "",
+            example: data.example || "",
+            totalReviews: data.totalReviews || 0,
+            correctCount: data.correctCount || 0,
+            level: level,
+            lastReviewed: lastReviewed,
+            nextDueAt: nextDueAt
+          });
+        });
+
+        await refreshStreakDisplay();
+        await recalculateDueQueue();
+        updateStatsAndGraph();
+        renderVocabList();
+      } catch (error) {
+        console.error("Database Error:", error);
+        if (listEl) listEl.innerHTML = `<div style="color: #ef4444; text-align: center;">Error loading cards.</div>`;
+      }
+    }
+
+    async function recalculateDueQueue() {
+      const streakData = await loadStreakData();
+      const absenceDays = getAbsenceDays(streakData.lastDate);
+      const maxDue = getMaxDueCapForAbsence(absenceDays);
+      dueQueue = pickCardsForSession(allCards, maxDue);
+    }
+
+    function updateStatsAndGraph() {
+      document.getElementById("totalCount").innerText = allCards.length;
+      document.getElementById("dueTodayText").innerText = `Due: ${dueQueue.length} cards`;
+      
+      const reviewCountBtn = document.getElementById("reviewCountBtn");
+      if (reviewCountBtn) reviewCountBtn.innerText = dueQueue.length;
+
+      const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      allCards.forEach(c => counts[c.level]++);
+
+      const maxVal = Math.max(...Object.values(counts), 1);
+      for (let i = 1; i <= 5; i++) {
+        document.getElementById(`countLvl${i}`).innerText = counts[i];
+        const pct = (counts[i] / maxVal) * 100;
+        document.getElementById(`barLvl${i}`).style.height = `${pct}%`;
+      }
+
+      const startBtn = document.getElementById("startReviewBtn");
+      if (dueQueue.length === 0) {
+        startBtn.disabled = true;
+        startBtn.innerHTML = `<i class="fas fa-check"></i> No Cards Due Now`;
+      } else {
+        startBtn.disabled = false;
+        startBtn.innerHTML = `<i class="fas fa-play"></i> Start Daily Review (<span id="reviewCountBtn">${dueQueue.length}</span> cards)`;
+      }
+
+      const practiceBtn = document.getElementById("startPracticeBtn");
+      if (allCards.length === 0) {
+        practiceBtn.disabled = true;
+      } else {
+        practiceBtn.disabled = false;
+        practiceBtn.innerHTML = `<i class="fas fa-play"></i> Start Practice (<span id="practiceCountLabel">${selectedPracticeCount}</span> cards)`;
+      }
+    }
+
+    function updateReviewProgress() {
+      const total = sessionStats.totalCards;
+      const remembered = sessionStats.firstTimeCorrect;
+      const remaining = dueQueue.length;
+
+      document.getElementById("rememberedCount").innerText = remembered;
+      document.getElementById("remainingCount").innerText = remaining;
+
+      const pct = total > 0 ? ((total - remaining) / total) * 100 : 0;
+      document.getElementById("progressBarFill").style.width = `${pct}%`;
+    }
+
+    function resetSessionUI() {
+      isSessionActive = false;
+      reviewedCardIds.clear();
+      document.body.classList.remove("review-mode");
+      document.getElementById("reviewStartBox").style.display = "flex";
+      
+      const wrapper = document.getElementById("cardWrapper");
+      wrapper.classList.remove("show");
+      wrapper.style.display = "none";
+      
+      const evalBar = document.getElementById("evalBar");
+      evalBar.classList.remove("show");
+      evalBar.style.display = "none";
+      
+      document.getElementById("resultScreen").classList.remove("show");
+    }
+
+    window.exitReview = async function() {
+      resetSessionUI();
+      await refreshStreakDisplay();
+      await recalculateDueQueue();
+      updateStatsAndGraph();
+    };
+
+    window.restartReview = async function() {
+      document.getElementById("resultScreen").classList.remove("show");
+      
+      let queue;
+      if (sessionMode === "practice") {
+        queue = pickCardsForPractice(allCards, selectedPracticeCount);
+      } else {
+        queue = pickCardsForSession(allCards, getMaxDueCapForAbsence(
+          getAbsenceDays((await loadStreakData()).lastDate)
+        ));
+      }
+      
+      dueQueue = queue;
+      sessionStats = { 
+        totalCards: dueQueue.length, 
+        firstTimeCorrect: 0, 
+        firstTimeWrong: 0, 
+        totalAnswers: 0 
+      };
+      reviewedCardIds.clear();
+      
+      const wrapper = document.getElementById("cardWrapper");
+      wrapper.classList.add("show");
+      wrapper.style.display = "block";
+      
+      const evalBar = document.getElementById("evalBar");
+      evalBar.classList.add("show");
+      evalBar.style.display = "grid";
+      
+      updateReviewProgress();
+      renderNextCard();
+    };
+
+    window.startReviewSession = async function() {
+      if (dueQueue.length === 0) return;
+      sessionMode = "daily";
+      isSessionActive = true;
+      
+      sessionStats = {
+        totalCards: dueQueue.length,
+        firstTimeCorrect: 0,
+        firstTimeWrong: 0,
+        totalAnswers: 0
+      };
+      reviewedCardIds.clear();
+
+      document.body.classList.add("review-mode");
+      document.getElementById("reviewStartBox").style.display = "none";
+      
+      const wrapper = document.getElementById("cardWrapper");
+      wrapper.classList.add("show");
+      wrapper.style.display = "block";
+      
+      const evalBar = document.getElementById("evalBar");
+      evalBar.classList.add("show");
+      evalBar.style.display = "grid";
+      
+      document.getElementById("resultScreen").classList.remove("show");
+      
+      updateReviewProgress();
+      renderNextCard();
+    };
+
+    window.selectPracticeCount = function(count) {
+      selectedPracticeCount = count;
+      document.querySelectorAll(".practice-count-btn").forEach(btn => {
+        btn.classList.toggle("selected", parseInt(btn.dataset.count) === count);
+      });
+      document.getElementById("practiceCountLabel").innerText = count;
+    };
+
+    window.startPracticeSession = function() {
+      if (allCards.length === 0) return;
+      
+      sessionMode = "practice";
+      isSessionActive = true;
+
+      const queue = pickCardsForPractice(allCards, selectedPracticeCount);
+      dueQueue = queue;
+
+      sessionStats = {
+        totalCards: dueQueue.length,
+        firstTimeCorrect: 0,
+        firstTimeWrong: 0,
+        totalAnswers: 0
+      };
+      reviewedCardIds.clear();
+
+      document.body.classList.add("review-mode");
+      document.getElementById("reviewStartBox").style.display = "none";
+      
+      const wrapper = document.getElementById("cardWrapper");
+      wrapper.classList.add("show");
+      wrapper.style.display = "block";
+      
+      const evalBar = document.getElementById("evalBar");
+      evalBar.classList.add("show");
+      evalBar.style.display = "grid";
+      
+      document.getElementById("resultScreen").classList.remove("show");
+      
+      updateReviewProgress();
+      renderNextCard();
+    };
+
+    function renderNextCard() {
+      const cardElement = document.getElementById("cardElement");
+      if (cardElement) cardElement.classList.remove("flipped");
+
+      if (dueQueue.length > 0) {
+        currentCard = dueQueue[0];
+        
+        const wrapper = document.getElementById("cardWrapper");
+        wrapper.classList.remove("show");
+        void wrapper.offsetWidth;
+        wrapper.classList.add("show");
+
+        document.getElementById("frontDisplay").innerText = currentCard.front;
+        document.getElementById("backDisplay").innerText = currentCard.back;
+        document.getElementById("exampleDisplay").innerText = currentCard.example ? `Example: ${currentCard.example}` : "";
+        document.getElementById("levelTag").innerText = `Level ${currentCard.level}`;
+      } else {
+        showResultScreen();
+      }
+    }
+
+    function getResultTier(percentage) {
+      if (percentage >= 90) return "excellent";
+      if (percentage >= 70) return "good";
+      if (percentage >= 50) return "average";
+      if (percentage >= 30) return "poor";
+      return "bad";
+    }
+
+    function showResultScreen() {
+      currentCard = null;
+      isSessionActive = false;
+
+      const total = sessionStats.totalCards;
+      const correct = sessionStats.firstTimeCorrect;
+      const wrong = sessionStats.firstTimeWrong;
+      const pct = total > 0 ? (correct / total) * 100 : 0;
+      const tier = getResultTier(pct);
+
+      document.getElementById("resultImage").src = RESULT_CONFIG.images[tier];
+      document.getElementById("resultImage").style.display = "";
+      document.getElementById("resultScore").innerText = `${correct} / ${total}`;
+      document.getElementById("resultSubtitle").innerText = RESULT_CONFIG.subtitles[tier];
+      document.getElementById("resultMessage").innerText = RESULT_CONFIG.messages[tier];
+      document.getElementById("resultCorrect").innerText = correct;
+      document.getElementById("resultWrong").innerText = wrong;
+
+      const wrapper = document.getElementById("cardWrapper");
+      wrapper.classList.remove("show");
+      wrapper.style.display = "none";
+      
+      const evalBar = document.getElementById("evalBar");
+      evalBar.classList.remove("show");
+      evalBar.style.display = "none";
+
+      document.getElementById("resultScreen").classList.add("show");
+    }
+
+    window.submitAnswer = async function(isCorrect) {
+      if (!currentCard) return;
+
+      const cardId = currentCard.id;
+      const isFirstTime = !reviewedCardIds.has(cardId);
+
+      sessionStats.totalAnswers++;
+
+      if (isFirstTime) {
+        reviewedCardIds.add(cardId);
+
+        if (isCorrect) {
+          sessionStats.firstTimeCorrect++;
+        } else {
+          sessionStats.firstTimeWrong++;
+        }
+
+        // Mark streak as soon as first daily card is answered
+        if (sessionMode === "daily") {
+          await markStreakReviewedToday();
+        }
+
+        const newTotal = currentCard.totalReviews + 1;
+        const newCorrect = currentCard.correctCount + (isCorrect ? 1 : 0);
+        const newLevel = calculateLevel(newTotal, newCorrect);
+        const now = new Date();
+        const newNextDueAt = computeNextDueAt(newLevel, now);
+
+        try {
+          await updateDoc(doc(db, "flashcards", cardId), {
+            totalReviews: newTotal,
+            correctCount: newCorrect,
+            lastReviewed: Timestamp.fromDate(now),
+            nextDueAt: Timestamp.fromDate(newNextDueAt)
+          });
+
+          currentCard.totalReviews = newTotal;
+          currentCard.correctCount = newCorrect;
+          currentCard.level = newLevel;
+          currentCard.lastReviewed = now;
+          currentCard.nextDueAt = newNextDueAt;
+
+          const inAll = allCards.find(c => c.id === cardId);
+          if (inAll) {
+            inAll.totalReviews = newTotal;
+            inAll.correctCount = newCorrect;
+            inAll.level = newLevel;
+            inAll.lastReviewed = now;
+            inAll.nextDueAt = newNextDueAt;
+          }
+        } catch (error) {
+          console.error("Update Error:", error);
+        }
+      }
+
+      dueQueue.shift();
+      if (!isCorrect) {
+        dueQueue.push(currentCard);
+      }
+
+      updateReviewProgress();
+      renderNextCard();
+    };
+
+    window.handleSearchSuggest = function(val) {
+      const container = document.getElementById("searchSuggestions");
+      const query = val.trim().toLowerCase();
+      if (!query) {
+        container.style.display = 'none';
+        return;
+      }
+
+      const matches = allCards.filter(c => c.front.toLowerCase().includes(query));
+      if (matches.length > 0) {
+        container.innerHTML = matches.map(m => `<div class="suggestion-item">Exists: <strong>${m.front}</strong> <span>(${m.back})</span></div>`).join('');
+        container.style.display = 'block';
+      } else {
+        container.style.display = 'none';
+      }
+    };
+
+    window.deleteCard = async function(id) {
+      try {
+        await deleteDoc(doc(db, "flashcards", id));
+        await fetchCards();
+      } catch (error) {
+        console.error("Delete Error:", error);
+      }
+    };
+
+    function renderVocabList() {
+      const listEl = document.getElementById("vocabList");
+      listEl.innerHTML = "";
+      if (allCards.length === 0) {
+        listEl.innerHTML = `<div style="color: #ffaa66; text-align: center; opacity: 0.7;">No items found.</div>`;
+        return;
+      }
+      allCards.forEach(card => {
+        const item = document.createElement("div");
+        item.className = "vocab-item";
+        item.innerHTML = `
+          <div class="vocab-info">
+            <strong>${card.front}</strong>
+            <span>: ${card.back} (Lvl ${card.level})</span>
+          </div>
+          <button class="btn-delete" onclick="deleteCard('${card.id}')"><i class="fas fa-trash-alt"></i></button>
+        `;
+        listEl.appendChild(item);
+      });
+    }
+
+    window.switchAddTab = function(tab) {
+      document.getElementById("tabSingleBtn").classList.toggle("active", tab === 'single');
+      document.getElementById("tabQuickBtn").classList.toggle("active", tab === 'quick');
+      document.getElementById("addSingleForm").style.display = tab === 'single' ? 'block' : 'none';
+      document.getElementById("addQuickForm").style.display = tab === 'quick' ? 'block' : 'none';
+    };
+
+    function setupEventListeners() {
+      const wrapper = document.getElementById("cardWrapper");
+      const cardElement = document.getElementById("cardElement");
+
+      const flipCard = () => {
+        if (!currentCard || !isSessionActive) return;
+        cardElement.classList.toggle("flipped");
+      };
+
+      if (wrapper) wrapper.addEventListener("click", flipCard);
+      
+      document.addEventListener("keydown", (e) => {
+        if (e.code === "Space" && e.target.tagName !== "INPUT" && e.target.tagName !== "TEXTAREA") {
+          e.preventDefault();
+          flipCard();
+        }
+      });
+
+      document.getElementById("addSingleForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const submitBtn = document.getElementById("submitBtn");
+        const front = document.getElementById("frontInput").value.trim();
+        const back = document.getElementById("backInput").value.trim();
+        const example = document.getElementById("exampleInput").value.trim();
+
+        if (!front || !back) return;
+
+        try {
+          submitBtn.disabled = true;
+          await addDoc(collection(db, "flashcards"), {
+            front, back, example,
+            type: 'vocab',
+            totalReviews: 0,
+            correctCount: 0,
+            lastReviewed: Timestamp.fromDate(new Date(0)),
+            nextDueAt: Timestamp.fromDate(new Date(0))
+          });
+
+          document.getElementById("frontInput").value = "";
+          document.getElementById("backInput").value = "";
+          document.getElementById("exampleInput").value = "";
+          document.getElementById("searchSuggestions").style.display = 'none';
+          await fetchCards();
+        } catch (err) {
+          console.error("Add Error:", err);
+        } finally {
+          submitBtn.disabled = false;
+        }
+      });
+
+      document.getElementById("addQuickForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const quickBtn = document.getElementById("quickSubmitBtn");
+        const rawText = document.getElementById("quickInput").value.trim();
+        if (!rawText) return;
+
+        const lines = rawText.split('\n').map(l => l.trim()).filter(l => l !== '');
+
+        try {
+          quickBtn.disabled = true;
+          quickBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+          for (let i = 0; i < lines.length; i += 3) {
+            const front = lines[i];
+            const back = lines[i + 1];
+            const example = lines[i + 2] || "";
+
+            if (front && back) {
+              await addDoc(collection(db, "flashcards"), {
+                front, back, example,
+                type: 'vocab',
+                totalReviews: 0,
+                correctCount: 0,
+                lastReviewed: Timestamp.fromDate(new Date(0)),
+                nextDueAt: Timestamp.fromDate(new Date(0))
+              });
+            }
+          }
+
+          document.getElementById("quickInput").value = "";
+          await fetchCards();
+        } catch (err) {
+          console.error("Quick Import Error:", err);
+        } finally {
+          quickBtn.disabled = false;
+          quickBtn.innerHTML = '<i class="fas fa-file-import"></i> Process & Import';
+        }
+      });
+    }
+
+    fetchCards().then(setupEventListeners);
+  </script>
+</body>
+</html>
