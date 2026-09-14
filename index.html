@@ -199,7 +199,6 @@
       box-shadow: 0 0 12px rgba(255, 140, 40, 0.5);
     }
 
-    /* ===== FLASHCARD — FIXED ===== */
     .study-section { display: flex; flex-direction: column; align-items: center; gap: 1rem; width: 100%; }
 
     .flashcard-wrapper {
@@ -278,7 +277,6 @@
     .btn-eval.right:hover { border-color: #10b981; color: #10b981; background: rgba(16, 185, 129, 0.15); transform: translateY(-2px); }
     .btn-eval:active { transform: scale(0.97); }
 
-    /* ===== RESULT SCREEN ===== */
     .result-screen {
       display: none;
       flex-direction: column;
@@ -376,7 +374,6 @@
     }
     .result-actions .btn { flex: 1; min-width: 140px; }
 
-    /* ===== PRACTICE PANEL ===== */
     .practice-panel .card-header { justify-content: flex-start; gap: 8px; }
 
     .practice-options {
@@ -420,7 +417,6 @@
       line-height: 1.5;
     }
 
-    /* ===== FORMS ===== */
     .input-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
     input, textarea {
       background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255, 102, 0, 0.3);
@@ -754,6 +750,16 @@
       return Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
     }
 
+    // Fisher-Yates shuffle
+    function shuffleArray(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
     let allCards = [];
     let dueQueue = [];
     let currentCard = null;
@@ -804,6 +810,7 @@
       return MAX_DAILY_DUE[0];
     }
 
+    // Pick due cards, prioritize by level, then shuffle the result
     function pickCardsForSession(cards, limit) {
       const now = new Date();
       const dueCards = cards.filter(c => isCardDue(c, now));
@@ -811,15 +818,20 @@
         if (a.level !== b.level) return a.level - b.level;
         return new Date(a.nextDueAt) - new Date(b.nextDueAt);
       });
-      return dueCards.slice(0, limit);
+      const picked = dueCards.slice(0, limit);
+      // Shuffle for varied order
+      return shuffleArray(picked);
     }
 
+    // Pick practice cards (lowest level first), then shuffle
     function pickCardsForPractice(cards, limit) {
       const sorted = [...cards].sort((a, b) => {
         if (a.level !== b.level) return a.level - b.level;
         return new Date(a.lastReviewed) - new Date(b.lastReviewed);
       });
-      return sorted.slice(0, limit);
+      const picked = sorted.slice(0, limit);
+      // Shuffle for varied order
+      return shuffleArray(picked);
     }
 
     async function loadStreakData() {
@@ -1104,7 +1116,6 @@
       renderNextCard();
     };
 
-    // Pre-render back face để flip đầu tiên không bị đen
     function prewarmFlip() {
       const cardElement = document.getElementById("cardElement");
       if (!cardElement) return;
@@ -1242,8 +1253,15 @@
       }
 
       dueQueue.shift();
+
       if (!isCorrect) {
-        dueQueue.push(currentCard);
+        // Insert at random position in the remaining queue
+        if (dueQueue.length === 0) {
+          dueQueue.push(currentCard);
+        } else {
+          const randomIndex = Math.floor(Math.random() * (dueQueue.length + 1));
+          dueQueue.splice(randomIndex, 0, currentCard);
+        }
       }
 
       updateReviewProgress();
